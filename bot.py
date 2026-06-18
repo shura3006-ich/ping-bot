@@ -5,7 +5,10 @@ import time
 from datetime import datetime
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+CHAT_IDS = [
+    os.getenv("CHAT_ID"),
+    "450308060",
+]
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "60"))  # секунд
 
 SERVERS = [
@@ -23,8 +26,6 @@ SERVERS = [
     {"name": "Sell1 Agregator",   "url": "https://agregator.sell1.best",        "group": "sell1.best"},
     {"name": "Sell1 ATS",         "url": "https://ats.sell1.best",              "group": "sell1.best"},
     {"name": "Nutra1",            "url": "https://nutra1.top",                  "group": "sell1.best"},
-    # densys
-    {"name": "Densys Server",     "url": "http://173.242.49.191",               "group": "densys"},
 ]
 
 # Хранит предыдущий статус каждого сервера
@@ -33,17 +34,20 @@ prev_status = {}  # url -> True/False
 
 async def send_telegram(session, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": text,
-        "parse_mode": "HTML"
-    }
-    try:
-        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-            if resp.status != 200:
-                print(f"Telegram error: {await resp.text()}")
-    except Exception as e:
-        print(f"Telegram send failed: {e}")
+    for chat_id in CHAT_IDS:
+        if not chat_id:
+            continue
+        payload = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML"
+        }
+        try:
+            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status != 200:
+                    print(f"Telegram error (chat {chat_id}): {await resp.text()}")
+        except Exception as e:
+            print(f"Telegram send failed (chat {chat_id}): {e}")
 
 
 async def check_server(session, srv):
